@@ -6,13 +6,23 @@ const logger = require('../config/logger');
 const hasSmtp = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 const hasSendgrid = !!process.env.SENDGRID_API_KEY;
 
+const smtpHost = process.env.SMTP_HOST || 'smtp.sendgrid.net';
+const smtpPort = parseInt(process.env.SMTP_PORT, 10) || 587;
+const smtpSecure = String(process.env.SMTP_SECURE).toLowerCase() === 'true';
+
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.sendgrid.net',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpSecure,
   auth: {
     user: process.env.SMTP_USER || 'apikey',
     pass: (hasSmtp ? process.env.SMTP_PASS : process.env.SENDGRID_API_KEY) || '',
+  },
+  connectionTimeout: parseInt(process.env.SMTP_CONNECTION_TIMEOUT_MS, 10) || 20000,
+  greetingTimeout: parseInt(process.env.SMTP_GREETING_TIMEOUT_MS, 10) || 20000,
+  socketTimeout: parseInt(process.env.SMTP_SOCKET_TIMEOUT_MS, 10) || 20000,
+  tls: {
+    servername: smtpHost,
   },
 });
 
