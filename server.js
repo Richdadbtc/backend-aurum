@@ -1,5 +1,10 @@
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const fs = require('fs');
+require('dotenv').config();
+const localEnvPath = path.join(__dirname, '../.env');
+if (process.env.NODE_ENV !== 'production' && fs.existsSync(localEnvPath)) {
+  require('dotenv').config({ path: localEnvPath });
+}
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -29,18 +34,29 @@ app.use(
 );
 
 // CORS
+const envClientUrls = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const normalizeOrigin = (v) => String(v || '')
+  .trim()
+  .toLowerCase()
+  .replace(/\/$/, '');
+
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5000',
+  ...envClientUrls.map(normalizeOrigin),
+  'http://localhost:5000',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
-];
+].map(normalizeOrigin);
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      cb(new Error('Not allowed by CORS'));
+      const o = normalizeOrigin(origin);
+      if (!origin || allowedOrigins.includes(o)) return cb(null, true);
+      return cb(null, false);
     },
     credentials: true,
   })
