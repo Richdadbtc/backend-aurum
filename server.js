@@ -46,21 +46,27 @@ const normalizeOrigin = (v) => String(v || '')
 const allowedOrigins = [
   ...envClientUrls.map(normalizeOrigin),
   'http://localhost:5000',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
 ].map(normalizeOrigin);
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      const o = normalizeOrigin(origin);
-      if (!origin || allowedOrigins.includes(o)) return cb(null, true);
-      return cb(null, false);
-    },
-    credentials: true,
-  })
-);
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    const o = normalizeOrigin(origin);
+    if (!origin || allowedOrigins.includes(o)) return cb(null, true);
+    return cb(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Paystack webhook needs the raw body for signature verification
 // Mount it BEFORE json body parser
